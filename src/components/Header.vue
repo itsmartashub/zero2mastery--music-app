@@ -26,7 +26,7 @@
                             <router-link :to="{ name: 'manage' }" class="px-2 text-white">Manage</router-link>
                         </li>
                         <li>
-                            <a class="px-2 text-white" href="#" @click.prevent="signOut">Logout</a>
+                            <a class="px-2 text-white" href="#" @click.prevent="userStore.signOut">Logout</a>
                         </li>
                     </template>
                 </ul>
@@ -38,7 +38,7 @@
 <script>
 import { mapStores } from 'pinia'
 import useModalStore from '@/stores/modal'
-// import useUserStore from '@/stores/user'
+import useUserStore from '@/stores/user'
 
 export default {
     name: 'AppHeader',
@@ -49,7 +49,6 @@ export default {
     methods: {
         toggleAuthModal() {
             this.modalStore.isOpen = !this.modalStore.isOpen //! ovo modalStore je ovaj store u modal.js sto koristimo, a isOpen je njegov property, tj ovo u njegovom state-u sto je, da je ime tj. id store-a user bilo bi userStore itd...
-            console.log(this.modalStore.isOpen)
 
             // this.isOpen = !this.isOpen //! ovo je sa mapWritableState
         }
