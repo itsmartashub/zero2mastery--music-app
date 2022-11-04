@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import VeeValidatePlugin from './includes/validation'
 import { auth } from './includes/firebase'
+import Icon from './directives/icon'
 
 import './assets/base.css'
 import './assets/main.css'
@@ -20,6 +21,7 @@ auth.onAuthStateChanged(() => {
         app.use(createPinia())
         app.use(router)
         app.use(VeeValidatePlugin)
+        app.directive('icon', Icon) // Direktiva mora biti registrovana PRE nego sto je #app mounted dakle pre: app.mount('#app'). directive() ima 2 argumenta, 1. je ime direktive, sva imena direktiva imaju V ispred naziva, tako Vue identifikuje direktivu, da se ne pomesaju i ne tretiraju kao atributi. 2. argument je konfiguracioni Object. Posto smo direktivu registrovali globalno, mozemo je koristiti u bilo kojoj komponenti u nasoj app. Idemo u HomeView.vue gde je komentar <!-- Icon -->, tj parent <div> od onog gde zelimo da insertujemo icon
 
         app.mount('#app')
     }
