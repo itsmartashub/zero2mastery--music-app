@@ -20,6 +20,10 @@ const auth = firebase.auth()
 const db = firebase.firestore()
 const storage = firebase.storage()
 
+db.enablePersistence().catch((err) => {
+    console.log(`Firebase persistence error ${err.code}`)
+}) // enablePersistence je firebase feature koji s ekoristi sa kesiranje podataka sa firebase. enablePersistence() ce reci Firebase-u da zadrzi kopiju baze podataka na korisnikovom browseru. Vrednost koja se vrati ovom f-jom je Promise. Mi ne treba da hendujemo Promise, ali bi trebalo da hendlujemo ukoliko dodje do nekih gresaka te cemo chainovati catch() f-ju
+
 const usersCollection = db.collection('users')
 const songsCollection = db.collection('songs')
 const commentsCollection = db.collection('comments')

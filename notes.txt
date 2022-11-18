@@ -1,5 +1,5 @@
 
-================ 14. DIRECTIVES ================
+💥💥💥💥💥💥💥💥💥💥💥 14. DIRECTIVES 💥💥💥💥💥💥💥💥💥💥💥
 I LIFECYCLE HOOKS:
     Direktive imaju lifecycle fn slicno kao i komponente. Kada god koristimo u nekom templejtu direktivu, Vue ce pozvati 6 fn-a, one ce se pozvati za razlicite faze direktive. WTF
 
@@ -28,9 +28,133 @@ II HOOK ARGUMENTS:
 
 
 
-================ 15. i18n ================
-Instalacija:
+💥💥💥💥💥💥💥💥💥💥💥 16. i18n 💥💥💥💥💥💥💥💥💥💥💥
+INSTALACIJA:
     npm install vue-i18n@9
     
 Te kreiramo fajl i18n.js u includes, u kom importujemo:
     import { createI18n } from 'vue-i18n'
+
+
+
+
+
+💥💥💥💥💥💥💥💥💥💥💥 17. PWA 💥💥💥💥💥💥💥💥💥💥💥
+INSTALACIJA: 
+    npm install vite-plugin-pwa
+
+Pa idemo u vite.config.js i dodajemo VitePWA, i u pluginsu pozivamo ovu f-ju:
+    import { VitePWA } from 'vite-plugin-pwa'
+
+🟠 MANIFEST FILE 🟠
+    Difoltno ovaj fajl se nece kreirati za dev servere, vece samo za production. Da bismo ovo overwrittovali i omogucili manifest file i za dev, idemo u vite.config.js u plugins i tamo gde je VitePWA() dodacemo devOptions: { enabled: true }}. Ali gde je on? Plugin nece generisati manifest file sve dok on ne bude built. Zato je PWA tricky. Mafifest fajlovi su kesirani sto development cini tezim. Zato smo enablovali ono. Idemo:
+    Browser u inpect, u Application i tu imamo Manifest sa leve strane. Ako odredjena stranica nema Manifest fajl, kada se klikne na Manifest levo u sidebaru, sa desne strane ce biti blank. Bice neki errori prikazani ako manifesta ima, i mi trba da eliminisemo sto vise tih errora. Postoje neki errori koji se nece eliinisati sve dok ne bude app hostovana na real server, production, a ne dev. Manifest fajl je u stv json file. Kliknemo na manifest.webmanifest.
+
+    Sad cemo da ukucamo u terminalu npm run build da bismo buildovali app jer se tad kreira real manifest.webmanifest fajl, pa da ga vidimo u editoru. Ovo je difoltno:
+
+    {
+        "name": "music_app_project",
+        "short_name": "music_app_project",
+        "start_url": "/",  ---> URL kojoj ce korisnik biti redirektovan kada kliknu na nasu app sa mobile home screen. Zelimo da idu na root
+        "display": "standalone",  ---> Da kreiramo iluziju da nasa app je nezavisna od browsera. Da uklonimo address bar iz browsera. Zapravo nasa app ce i dalje biti otvorena unutar browsera, ali korisnik nece moci da navigira ka nekom drugom sajtu. Takodje, da sakrijemo i toolbar. Delovace kao da je korisnik instalirao app, a ne samo shortcut
+        "background_color": "#ffffff",
+        "lang": "en",
+        "scope": "/"   ---> Moze da restriktuje korisnika za neku specificnu path u nasoj app. Ako bi korisnik navigirao van skoupa, app ce se konvertovati u normalan browser
+    }
+
+    Kako da verifikujemo da browser loadinguje manifest file? Moramo reci browseru da ucita manifest file, on to nece sam traziti automatski.
+    To cemo uraditi dodajuci <link> tag u <head> sekciji u documentu.
+
+    Idemo u vite.config.js u VitePWA({}) i dodajemo manifest: {}. Tu menjamo ime, boju teme i ikonice:
+
+    manifest: {   //ovde cemo menjati ime, boju teme i ikonice
+        name: 'Music App',
+        theme_color: '#ff5e3a',   // Glavna boja za nase UI elemente, fazon accent
+        icons: [
+                \\ niz ikonica, svaka je za sebe, mozemo vise iknica da imamo ofc, za razlicite uredjaje. source, sizes i type moramo dodati za svaku ikonicu
+            {
+                src: 'assets/img/pwa-192x192.png', // path ka fajlu
+                sizes: '192x192',
+                type: 'image/png'
+            }
+        ]
+    }
+
+
+🟣 OFFLINE SUPPORT W SERVICE WORKERS 🟣
+    Service Workers je JS fajl koji se pokrece u pozadini. Ugl je odvojen od koda aplikacije i zbog toga mogu da se pokrenu paralelno sa aplikacijom. To zanaci da kod aplikacija i service workers ne mogu da blokiraju jedno drugo. JS je jezik koji se izvrsava u jednom thread-u. Ako bismo napisali sync kod, doslo bi do blokiranja. Ovo se resava koristeci callback ili Promises. aka async kod.
+    Recimo da imamo sync operacije, to znaci da nista drugo nece moci da se pokrene dok se operacija ne zavrsi. Medjutim, postoji izuzetak, a to su Service Workers. SW nece blokirati sta god da je pokrenuto iako je u pitanju sync operacija. To je jer se u pozadini oni pokrecu u odvojenim thread. Nasa aplikacija ce moci smoothly da radi iako se rade i SW jer su oni izdvojeni jedno od drugog. Ne utice dakle na performanse.
+
+    Mozemo pokrenuti nekoliko taskova sa SW:
+        - kesirati fajlove
+        - push bg obavestenja
+        - syncovanje aplikacije
+
+    SW nemaju pristup DOM-u, dakle ne mozemo da dodamo, uklonimo ili apdejtujemo HTML elemente. Druga stvar, ne podrzavaju svi browseri SW, to je relativno novi feature.
+
+    Na vise nacina mozemo kreirati SW. Jedan je manualni, a drugi je koristeci Workbox. Workbox je lib koju je Google kreirao. Workbox je konfigurisan sa PWA pluginom. Nas zadatak je da registrujemo SW iz skripte. Idemo u main.js. Preporucuje se da registrujemo SW sto je pre moguce: import { registerSW } from 'virtual:pwa-register' i pozivamo ovu f-ju registerSW({ immediate: true }) nakon svih imports. Ovo immediate: true znaci da f-ja za registrovanje SW-a ne cekad a se window.onload vec da krene odmah
+
+
+🟣 UNDERSTANDING CACHING 🟣
+    "There r only 2 hard things in Computer Science: cashig and naming things" by Phol Karlton.
+    Caching se koristi za bolje performanse aplikacije, ali treba znaci kad i kako koristiti caching. Postoji vise strategije za implementiranje cachinga:
+
+    1. CACHE, THEN NETWORK --- Recimo da zelimo da kesiramo assets poput CSS fajlova, CSS fajlovi se ne menjanju cesto. Nije nam potreban rikvest (ponovni ofc) za dohvatanje CSS fajlova. Mozemo ga rikvestovati jednom i cuvati u cache. Naknadni zahtevi za CSS ce biti servirani iz kesa. Ovo je poznatije kao CACHE FIRST, THEN NETWORK stratgija. Dakle browser ima API gde ce prvo kod sebe da trazi te fajlove (lokalno, na masini), ako se ispostavi da ih nema, on ce rikvestovati fajlove iz networka. OVo super f-nise kad su staticni fajlovi u pitanju.
+
+    2. NETWORK, THEN CACHE --- Ovo gore je skroz druga prica kad je recimo Firebase u pitanju. Moguce je kesirati podatke iz filestore, ali to sve treba uzeti sa zadrsakom jer uvek zelimo azuzirane podatke iz baze. Uostalom, nasa app se vise sadrzi od tih podataka. Ako korisnik ode offline, videce sajt, ali ne i podatke. Trebalo bi da kesiramo podatke kada korisnik ode offline. Postoji druga strategija koju mozemo koristi, a to je NETWORK FIRST, THEN CACHE. Uvek cemo rikvestovati podatke preko neta, podaci koje ce da dohvatimo cemo cuvati lokalno, imacemo lokalnu kopiju tih podataka u browseru. Ako korisnik ode offline, mozemo ga obsluzivati sa full podacima iz lokala. Cak mozemo da syncujemo podatke kada korisnik postane online. Dakle kes se samo koristi kada je korisnik offline.
+
+    Workbox dosta olaksava posao, ali nije bas savrsen. Recimo ne kesira slike.
+
+
+🟡 WORKBOX 🟡
+    Workbox nece kerisati API request, odnosno Firebase rikvestove. Workbox je fokusiran na kesiranje statickih assets.
+    Idemo u vite.config.js i dodajemo objekat workbox koji ce da sadrzi konfiguraciona podesavanja za workbox.
+
+    workbox: {
+        globPatterns: ['**/*.{js,css,html,png,jpg,}']
+    }
+    glob - Poznato je za kompjuterske programe da traze fajlove unutar sistema. Medjutim, mi mozda nemamo kompletnu listu fajlova. I umesto da kreiramo kompletnu listu tih fajlova, mozemo kreirati pattern. Ako fajl mecuje patern, bice dodat u results listu. glob je paket koji pretrazuje fajlove zadatim paternima. Pattern ce koristiti da kesira js, css, html i slike. Sad pokrenimo: npm run build, pa potop npm run preview, pa u browseru dohvatimo nasu app, pa odemo offline i ponovo rifresujemo app
+    Ako zelimo da vidimo koji su se fajlovi sve kesirali ovim, mozemo otici u devtools na Application tab, i sa leve str. u sidebaru gde je Cache imamo 🔽Cache Storage
+
+
+🔴 FIREBASE DATA PERSISTENCE 🔴
+    Za ovo ne mozemo koristiti workbox. Firebase SDK nam nudi caching data resenje. FB SDK ce priorizovati NETWORK zahteve u odnosu na CACHE (NETWORK, THEN CACHE) sto je suprotno od ovog malo pre sa Workbox-om gde je CACHE, THEN NETWORK.
+
+    - Difoltno, FB nece kesirati pdoatke te ovo moramo da ukljucimo. Idemo u firebase.js. FB ovaj feature naziva Data Persistence. Zelimo da ga ukljucimo nakon sto se povezemo sa fb. Pozivamo db.enablePersistence(). db.enablePersistence() ce reci firebaseu da cuva kopiju baze podataka u korisnikovom browseru. Ako korisnik postane offline, SDK ce se switchvati i koristice se lokalna kopija. Vrednost koja se vrati ovom f-jom je Promise. Mi ne treba da hendujemo Promise, ali bi trebalo da hendlujemo ukoliko dodje do nekih gresaka te cemo chain-ovati catch() f-ju
+
+    Stvari na koje treba da pripazimo koristeci ovaj feature:
+        - Korisnik se ne moze ulogovati (authenticate) ukoliko vec nije.
+        - Skladiste je ograniceno. Normalno, kopija baze podataka zauzima prostor na korisnikovoj masini. Vecina mobilnih uredjaja je ogranicenog skladista. Firebase ce se potruditi da dobro upravlja podacima, ali treba da imamo na umu kako cemo rikvestovati podatke.
+        - Aploadovanje fajlova nije podrzano. Zato moramo da apdejtujemo nasu app sa kodom, gde cemo obavestiti korisnika da nije u mogucnosti da upload-uje fajlove dok je offline.
+
+
+🟤 HANDLING OFFLINE UPLOADS 🟤
+    Idemo u Upload.vue i idemo u upload() f-ju kod gde cemo cekirati da li je korisnik offline, ako jeste ofarbati progress bar u crveno i vizuelno kazati korisniku da je offline i da ne moze upload. I vratiti f-ju sa return.
+    
+    BTW, onu page ili f-nost koju nismo posetili dok smo bli online, nece raditi ni offline, ofc. Tipa ako nismo isli na neku stranicu unutar app, ili ako nismo pustili neku pesmu, nece moci ni offline.
+
+
+🔗 LINKOVI
+    002 Install-Criteria
+    https://web.dev/install-criteria/
+
+    004 PWA-Plugin-Manifest-File
+    https://vite-plugin-pwa.netlify.app/guide/pwa-minimal-requirements.html#web-app-manifest
+
+    004 Manifest-File
+    https://developer.mozilla.org/en-US/docs/Web/Manifest
+
+    005 Workbox
+    https://developer.chrome.com/docs/workbox/
+
+    007 Workbox
+    https://developers.google.com/web/tools/workbox
+
+    008 Enable-Persistence
+    https://firebase.google.com/docs/reference/js/firebase.firestore.Firestore#enablepersistence
+
+
+
+
+
+💥💥💥💥💥💥💥💥💥💥💥 18. PWA 💥💥💥💥💥💥💥💥💥💥💥

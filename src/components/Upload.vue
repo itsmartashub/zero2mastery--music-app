@@ -74,6 +74,19 @@ export default {
 
                 if (file.type !== 'audio/mpeg') return
 
+                // hendlujemo moguce greske ako korisnik pokusa da upload-uje fajlove dok je OFFLINE
+                if (!navigation.onLine) {
+                    this.uploads.push({
+                        task: {}, // task sluzi da dobijemo informacije o downloadu. Ali posto necemo inicijalizovati uopste download, ostavicemo ga kao prazan objekat
+                        current_progress: 100, // koristi se za width progress bara, stavicemo 100, al cemo ga obojiti u crveno
+                        name: file.name,
+                        variant: 'bg-red-400',
+                        icon: 'fas fa-times',
+                        text_class: 'text-red-400'
+                    })
+                    return
+                }
+
                 const storageRef = storage.ref() //! zero2mastery--musicapp.appspot.com, kreiramo ovo za Firebase, da bi znao GDE DA UPLOAD-uje FILE. Ovo je ROOT reference
 
                 const songsRef = storageRef.child(`songs/${file.name}`) // zero2mastery--musicapp.appspot.com/neko_ime_audia.mp3. Ovo jde subdirectory. CHILD u ROOT-u, razlika izmedju child() i ref() je ta da child() pravi path relativno u odnosu na parent ref, u ovom slucaju, parent ref je storageRef
