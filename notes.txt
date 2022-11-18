@@ -23,3 +23,14 @@ II HOOK ARGUMENTS:
     3. vnode - omogucava nam da se uputimo direktno na node u virtual DOM-u ako je to ono sto nam treba. Vue ce napraviti kopiju DOM-a koji se zove Virtual DOM. OVo se od el argumenta razlikuje sto promene koje izvrsimo u Virtual DOM-u nece se reflektovati na stranici. READ ONLY property - vrsenje modifikacije na ovom propertiju nece imati bas lep rezultat
 
     4. prevNode - prethodna verzija vnode objecta. Moze da se koristi samo u beforeUpdate i updated hooks
+
+
+
+
+
+================ 15. i18n ================
+Instalacija:
+    npm install vue-i18n@9
+    
+Te kreiramo fajl i18n.js u includes, u kom importujemo:
+    import { createI18n } from 'vue-i18n'

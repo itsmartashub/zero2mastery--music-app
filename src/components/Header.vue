@@ -30,6 +30,15 @@
                         </li>
                     </template>
                 </ul>
+
+                <!-- ml-auto klasa ce da pomeri listu levo (margin-left: auto) -->
+                <ul class="ml-auto">
+                    <li>
+                        <a href="#" class="px-2 text-white" @click.prevent="changeLocale">
+                            {{ currentLocale }}
+                        </a>
+                    </li>
+                </ul>
             </div>
         </nav>
     </header>
@@ -43,15 +52,18 @@ import useUserStore from '@/stores/user'
 export default {
     name: 'AppHeader',
     computed: {
-        ...mapStores(useModalStore, useUserStore)
+        ...mapStores(useModalStore, useUserStore),
         // ...mapWritableState(useModalStore, ['isOpen'])
+        currentLocale() {
+            return this.$i18n.locale === 'fr' ? 'French' : 'English'
+        }
     },
     methods: {
         toggleAuthModal() {
             this.modalStore.isOpen = !this.modalStore.isOpen //! ovo modalStore je ovaj store u modal.js sto koristimo, a isOpen je njegov property, tj ovo u njegovom state-u sto je, da je ime tj. id store-a user bilo bi userStore itd...
 
             // this.isOpen = !this.isOpen //! ovo je sa mapWritableState
-        }
+        },
 
         // signOut() {
         //     this.userStore.signOut()
@@ -61,6 +73,11 @@ export default {
         //         this.$router.push({ name: 'home' })
         //     }
         // }
+
+        changeLocale() {
+            // svaka komponenta je injectovana sa $i18n. Ovo ce nam omoguciti pristup f-jama i propertijima biblioteke, postaje nam dostupno onog momenta kad smo registrovali plagin u main.js.
+            this.$i18n.locale = this.$i18n.locale === 'fr' ? 'en' : 'fr'
+        }
     }
 }
 </script>

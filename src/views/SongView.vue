@@ -19,6 +19,14 @@
                     <!-- Song Info -->
                     <div class="text-3xl font-bold">{{ song.modified_name }}</div>
                     <div>{{ song.genre }}</div>
+                    <!-- 
+                       //? $n() ce prevesti numeric vrednosti. Ima tri parametra, ali samo su prva dva obavezna:
+                       //? 1. PRVI je broj, nismo storovali ni jednu cenu, ali mozemo da hardkodujemo.
+                       //? 2. DRUGI parametar je ime prevoda koji cemo da koristimo, stavimo currency. Govorimo mu da broj treba da koristi i formatira u odnosu na currency, tj kao currency tj. valutu
+                       //? 3. TRECI argument je locale koji zelimo da koristimo, ne moramo uvek cekati prevod stranice, mozemo ga hardkodovati ovde. 
+                       //! VAZNO: ovde se menja valuta, ALI NE IZVRSAVA SE KONVERZIJA USD VREDNOSTI U JPY !!!!
+                     -->
+                    <div class="song-price">{{ $n(1, 'currency', 'ja') }}</div>
                 </div>
             </div>
         </section>
@@ -28,7 +36,15 @@
             <div class="bg-white rounded border border-gray-200 relative flex flex-col">
                 <div class="px-6 pt-6 pb-5 font-bold border-b border-gray-200">
                     <!-- Comment Count -->
-                    <span class="card-title">Comments ({{ song.comment_count }})</span>
+                    <!-- <span class="card-title">Comments ({{ song.comment_count }})</span> -->
+                    <!-- 
+                        //? $t() ima i drugi, opcioni, parametar; to ce biti vrednost za onaj placeholder u json, sto je u { count }
+                        //! i18n podrzava pluralizaciju, ne treba za svaki slucaj da pravimo poseban prevod, tipa kad nema komentara da pise "No comments", kad ima 1 da pise "1 comment", kad ima vise da pise "333 commentS". Vec koristimo | (pipe), i dodajemo prevode: BITAN JE REDOSLED! en.json ===>  "comment_count": "No comments | 1 comment | {count} comments". I ovde ne koristimo onda $t(), vec $tc()!!! I u njemu su argumentimalo drugaciji nego u $t(); PRVI argument je path ka poruci, tu dakle koristimo isto kao i u $t(), za DRUGI arg je Numeric vrednost, odnosno broj tj song.comment_count
+                        https://vue-i18n-next.intlify.dev/guide/essentials/pluralization.html
+                     -->
+                    <span class="card-title">
+                        {{ $tc('song.comment_count', song.comment_count, { count: song.comment_count }) }}
+                    </span>
                     <i class="fa fa-comments float-right text-green-400 text-2xl"></i>
                 </div>
 

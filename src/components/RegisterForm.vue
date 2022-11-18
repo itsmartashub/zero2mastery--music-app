@@ -81,7 +81,15 @@
         <!-- TOS -->
         <div class="mb-3 pl-6">
             <vee-field type="checkbox" name="tos" value="1" class="w-4 h-4 float-left -ml-6 mt-1 rounded" />
-            <label class="inline-block">Accept terms of service</label>
+            <!-- <label class="inline-block">Accept terms of service</label> -->
+            <!-- 
+                //! menjamo <label> element sa <i18n-t> Komponentom, jer ovaj prevod vucemo iz en.json. Za atribut stavljamo keypath="register.accept" koji gadja koji tacno prevod. Ovo treba da se wrappuje u neki real HTML tag, pa stavljamo jos jedan atribut, koji se zove tag="label".
+                //! Text ili element (content) koji stavimo unutar <i18n-t> komponente ce zameniti placeholder koji smo naveli za register.accept path
+                https://vue-i18n-next.intlify.dev/guide/advanced/component.html
+             -->
+            <i18n-t class="inline-block" keypath="register.accept" tag="label">
+                <a href="#"> {{ $t('register.tos') }}</a>
+            </i18n-t>
             <ErrorMessage class="text-red-600 block" name="tos" />
         </div>
         <button
