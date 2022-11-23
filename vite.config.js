@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vue from '@vitejs/plugin-vue'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -36,6 +37,7 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,png,jpg,}'] // glob. Poznato je za kompjuterske programe da traze fajlove unutar sistema. Medjutim, mi mozda nemamo kompletnu listu fajlova. I umesto da kreiramo kompletnu listu tih fajlova, mozemo kreirati pattern. Ako fajl mecuje patern, bice dodat u results listu. glob je paket koji pretrazuje fajlove zadatim paternima. Pattern ce koristiti da kesira js, css, html i slike. Sad pokrenimo: npm run build, pa potop npm run preview, pa u browseru dohvatimo nasu app, pa odemo offline i ponovo rifresujemo app
             }
         })
+        // visualizer({ open: true }) // open: true nam omogucava Rollup Visualizer sada otvori u browseru HTML fajl gde je kreirao prikaz velicina svih bundle-a. Ovaj plugin se nece moci pokrenuti u dev modu, vec iskljucivo u build/preview (npm run build)
     ],
     resolve: {
         alias: {

@@ -143,24 +143,32 @@ export default {
         }
     },
 
-    async created() {
-        const docSnapshot = await songsCollection.doc(this.$route.params.id).get() // U ovom slucaju je skroz ok da koristimo get() za dohvatanje pesama. Ali ukoliko bismo za path route koristili tipa ime pesme umesto id, onda je valjda bolje korisitit where() fb metod, jer daje vise mogucnosti po cemu da poziva songs (where('modified_name', '==', this.$route.params.id)), valjda.
+    /*
+    ! pogledati PERCEIVED PERFORMANCE u notes.txt zato smo promeniti created u beforeRouteEnter. 
+    Postoji nekoliko problema sad sa ovim. UPAMTI, beforeRouteEnter se runnuje PRE nego se komponenta ucita, dakle this keyword nam nije dostupna. Niti drugi podaci, niti methods, niti ista sto je injectovano u components. Dobicemo error jer pokusavamo da referencujemo vrednost koja ne postoji u trenutnom skoupu. 
+    Srecom, postoji resenje za to. this.$route ne mozemo da koristimo kao tako, ali mozemo da koristimo to object (iz parametra), to object sadrzi podatke koje se odnose na rutu koju trenutno posecujemo; sadrzi route parametre. 
+    Zatim koristicemo next() parametar da omogucimo context nasem kodu. next() f-ji cemo prosledtii callback f-ju koja moze da ima jedan parametar, a to je vm. Kada se komponenta ucita mozemo koristiti vm parametar da dohavtimo component podatke. */
+    // async created() {
+    async beforeRouteEnter(to, from, next) {
+        // const docSnapshot = await songsCollection.doc(this.$route.params.id).get()
+        const docSnapshot = await songsCollection.doc(to.params.id).get() // U ovom slucaju je skroz ok da koristimo get() za dohvatanje pesama. Ali ukoliko bismo za path route koristili tipa ime pesme umesto id, onda je valjda bolje korisitit where() fb metod, jer daje vise mogucnosti po cemu da poziva songs (where('modified_name', '==', this.$route.params.id)), valjda.
 
-        /* 
-       ? Postoji mogucnost da korisnik poseti pesmu koja ne postoji, ili postoji ali je izbrisana iz database iz nekog razloga; Firebase nece izbaciti gresku ukoliko ne moze da pronadje document, on ce i dalje da vraca snapshot. Bolje da cekiramo da li document postoji sa exist property u snapshotu. Ako ne postoji, idemo na 'home' page
-       */
+        next((vm) => {
+            // vm === this
+            /* 
+            ? Postoji mogucnost da korisnik poseti pesmu koja ne postoji, ili postoji ali je izbrisana iz database iz nekog razloga; Firebase nece izbaciti gresku ukoliko ne moze da pronadje document, on ce i dalje da vraca snapshot. Bolje da cekiramo da li document postoji sa exist property u snapshotu. Ako ne postoji, idemo na 'home' page */
+            if (!docSnapshot.exists) {
+                vm.$router.push({ name: 'home' })
+                return
+            }
 
-        if (!docSnapshot.exists) {
-            this.$router.push({ name: 'home' })
-            return
-        }
+            const { sort } = vm.$route.query
 
-        const { sort } = this.$route.query
+            vm.sort = sort === '1' || sort === '2' ? sort : '1' // Postoji jedan problem s ovim. Apdejtujemo sort property, taj apdejt triggeruje watcher za sort() f-ju bilo da se vrednost promeni ili ne. Vue ce nam izbaciti gresku ukoliko pokusavamo da posetimo stranicu koju vec posecujemo (na kojoj smo vec). Zelimo da ovo izbegnemo tako sto cemo da u sort() dodamo: if (newVal === vm.$route.query.sort) return
 
-        this.sort = sort === '1' || sort === '2' ? sort : '1' // Postoji jedan problem s ovim. Apdejtujemo sort property, taj apdejt triggeruje watcher za sort() f-ju bilo da se vrednost promeni ili ne. Vue ce nam izbaciti gresku ukoliko pokusavamo da posetimo stranicu koju vec posecujemo (na kojoj smo vec). Zelimo da ovo izbegnemo tako sto cemo da u sort() dodamo: if (newVal === this.$route.query.sort) return
-
-        this.song = docSnapshot.data() // Ne moramo da cuvamo ID opet posebno, jer se on vec nalazi u data()
-        this.getComments() // Komentare zelimo da fetchujemo prvi x kad je komponenta prvi x loadovana, i 2. put kada je komentar submitovan
+            vm.song = docSnapshot.data() // Ne moramo da cuvamo ID opet posebno, jer se on vec nalazi u data()
+            vm.getComments() // Komentare zelimo da fetchujemo prvi x kad je komponenta prvi x loadovana, i 2. put kada je komentar submitovan
+        })
     },
 
     methods: {

@@ -157,4 +157,173 @@ Pa idemo u vite.config.js i dodajemo VitePWA, i u pluginsu pozivamo ovu f-ju:
 
 
 
-💥💥💥💥💥💥💥💥💥💥💥 18. PWA 💥💥💥💥💥💥💥💥💥💥💥
+💥💥💥💥💥💥💥💥💥💥💥 18. PERFORMANCE OPTIMIZATION 💥💥💥💥💥💥💥💥💥💥💥
+🟢 AUTO REGISTERING GLOBAL COMPONENTS 🟢
+    - Lokalno registrovanje komponenti. Ako se komponenta kor. samo na jednom (par) mestu lokalno, logicno lokalno ces je registrovati, ako se ona koristi na vise razl mesta, mozda ipak globalno da registrujes.
+    - Da bismo ustedeli vreme, Vite moze automatski da globalno registruje komponente. Idemo u components folder i kreiracemo folder base. Globalne komponente bi trebalo da sacuvamo u folderu da bi ih webpack lakse nasao. Tu cemo kreirati komponentu Button.vue. Kreiramo samo za demonstraciju, nece ta komponenta nista spec da sluzi nasoj app. Potom cemo da kreiramo folder za globalno registrovanje komponenti:
+    Idemo u includes i kreiramo _globals.js fajl. Msm mozemo da napisemo kod i u main.js fajlu, ali cemo kreirati novi fajl zarad bolje citljivosti. Mormo ovaj _globals.js fajl da registrujemo u nasu app tj u main.js cemo importovati
+        import GlobalComponents from './includes/_globals'
+    i registrovati je u auth.onAuthStateChanged(()) sa app.use(GlobalComponents)
+
+🟢 PERCEIVED PERFORMANCE 🟢
+    - Idemo Song.vue i tamo gde je async created() cemo promeniti u async beforeRouteEnter(). Elem, kada smo na slabijem netu, svaki x kada rifresujemo tu stranicu (na 3G internetu btw) iskakanje sadrzaja je bas primetno. Nakon sto se str. ucita, potrebno je malo da se ime (naziv i autor pesme) pojavi. Bilo bi bolje da se stranica ucita u "jednoglasno"/"skladno"/sve zajedno. Zato smo promenili created() f-ju u beforeRouteEnter(), sa async created() ce se kontent ucitati PRE nego sto se ikakve async radnje izvrse, zato vidimo da se componenta ucitala, ali bez contenta, jer nismo jos dobili podatke iz firebase.
+    - Zelimo da se podaci ucitaju nakon sto dohvatimo podatke. Zato cemo promeniti hook created() u navigation guard beforeRouteEnter(). beforeRouteEnter() ce se pokrenti PRE nego sto se componenta ucita na stranicu. Neka od bitnih razlika izmedju create() i beforeRouteEnter() je ta sto mozemo da kazemo Vue kada tacno da predje na sledeci korak (next()). Ako ne kazemo Vue da smo spremni da nastavimo dalje, nista se nece desiti. Ovaj guard ce nam omoguciti da izvrsavamo bilo koju radnju potrebnu da se komponenta adekvatno prikaze.
+    - Postoji nekoliko problema sad sa ovim. UPAMTI, beforeRouteEnter se runnuje PRE nego se komponenta ucita, dakle this keyword nam nije dostupna. NIti drugi podaci, niti methods, niti ista sto je injectovano u components. Dobicemo error jer pokusavamo da referencujemo vrednost koja ne postoji u trenutnom skoupu. Idemo tamo...
+
+
+🟢 DYNAMIC ROUTE IMPORTS 🟢
+    Ucimo kako da dinamicki importujemo componente za route.
+    Bundle size reduction tehnike.
+    Svaki x kada apdejtujemo fajl, Vite ce apdejtovati nas bundle. Bundle sadrzi HTML, CSS i JS kod. Jedan od nacina da smanjimo velicinu bundle fajla jeste da dinamicki importujemo root komponente; dakle ako sam na Home stranici, potrebno je samo da se ucita home component. Ali difoltno, ucitavaju se sve komponente, bil oda se koriste ili ne. Bilo bi bolje da ucitamo komponente samo kad je to potrebno:
+
+    VITE CHUNKS --- fajl koji je izdvojen iz bundle, ali koji i dalje moze biti ucitan u bundle. Fajlovi u nasem projektu su iskombinovani/merdzovani u jedan fajl, iliti to bar Vite pokusava da uradi. Ponekad ne zelimo da ovo bude slucaj. Mozemo reci Vite-u da zelimo za neki fajl da bude procesuiran, a da ne bude deo bundle jezgra. To se zove CHUNK. Chunk je idealan za fajlove koji se zahtevaju da bi nasa app bila f-nalna, ali koje nisu potrebni da budu ucitani odmah, umesto toga, mogu biti ucitani kasnije kad nam budu bili potrebni.
+    Jedan od slucaja gde se chunk koriste jeste ucitavanje route komponenti. Idemo u folder router ▶️ index.js. Unutar tog fajla mi importujemo komponente na pocetku fajla. Konvertovacemo te komponente u chunks sto ce nam omoguciti da uctiamo komponente samo kad su nam potrebne. Dakle loadovacemo komponente async.
+
+        const Home = () => import('@/views/HomeView.vue')
+        const About = () => import('@/views/AboutView.vue')
+        const Manage = () => import('@/views/ManageView.vue')
+        const Song = () => import('@/views/SongView.vue')
+
+🟢 NProgress.js 🟢
+    Jedan od cons za odvajanje bundle u chunks jeste to sto je duze (prvo) ucitavanje izmedju stranica, jer chunks zahteva dodatne rikvestove i downloadovanje sa servera. Ako korisnik klikne na link, treba da omogucimo neki pokazatelj da se trenutni chunk skida (poput progress bara, preloadera). Ako ne kreiramo korisniku vizuelno neki pokazatelj, on ce imati utisak da se nista ne desava. To moze uciniti da korisnik napusti app. To svakako zelimo da izbegnemo.
+
+    INSTALACIJA:
+    - npm i nprogress
+
+    IMPLEMENTACIJA:
+    - Ako korisnik poseti novu stranicu, zelimo da loadujemo progress bar, jednom kada se str. ucita, zelimo da uklonimo progress bar. Ovo mozemo ostvariti koriscenjem Navigation Guard-a. Idemo u includes folder da kreiramo progress-bar.js fajl.
+
+    ./includes/progress-bar.js:
+
+    import NProgress from 'nprogress'
+
+    export default (router) => {
+        router.beforeEach((to, from, next) => {
+            NProgress.start()
+            next()
+        })
+
+        router.afterEach(NProgress.done)
+    }
+
+
+🟢 CODE COVERAGE 🟢
+    Postoje jos neke tools koje nam pomazu da monitoringujemo app performance. Jedan je Code Coverage.
+    elem, ucili smo kako da splitujemo bundle u chunks. Pisanje komponenti u izdvojene fajlove ne ucinolo to da korisnik ne mora da daunlouduju sve za svaku stranicu odj, vec po potrebi. Ono sto je ovde izazov jeste kako da znamo koji kod se koristi, a koji ne u datom trenutku?
+    Jedan od nacina da to skontamo jeste code coverage tool koji se nalazi u devtools. On ce nam u realtime-u reci koji deo naseg koda se ne koristi u toj i toj situaciji.
+        devtools ▶️ ⁝ ▶️ Show console drawer
+    
+    - Show console drawer pruza set alata za debagovanje aplikacije. MOzda lici jos jedna konzola, ali mozemo dodati opcije u donjem levom uglu, pa na Coverage. I stisnemo record btn i potom refresh. Tu se izmedju pstalog na listi nalazi i Usage Visualisation: crvena je deo koji se ucitava, ali ne koristi (takoreci dead code), a plava koji se ucitava i koristi.
+
+    - Nekad ce i kondicionalne stvati biti crvene, to je normalno jer oni ce se kondicionalno koristiti. (if-else), dakle sad ne, ali ako je negde fazon else, onda hoce. Nzm kako da obj, al razumem hahaha.
+
+
+🟢 ROLLUP PLUGIN VISUALIZER 🟢
+    Behind-the-scene, Vite koristi Rollup Plugin
+
+    INSTALACIJA:
+    npm i -D rollup-plugin-visualizer
+
+    Idemo u vite.config.js da konfigurisemo plugin sa Vite-om
+        import { visualizer } from 'rollup-plugin-vizualizer'
+
+    Rollup plugin moze biti registrovan kao i ostali Vite Pluginsi. Poznacemo unutar plugins: [visualizer()] arayya. I sad ce plugin da omoguci HTML file gde ce biti prikazana velicina bundle-a. Medjutim, HTML se nece otvorili u browseru. Mozemo forsirati da se otvori tako sto cemo visualizer({ open: true }) f-ji da prosledimo objekat gde ce biti open: true. Ovaj plugin se nece moci pokrenuti u dev modu, vec iskljucivo u build/preview (npm run build).
+
+    Taj chart sto je otvorio se naziva tree-mappom. Msm iako je prikazano kao gomila pravougaonika, to je tree-map (hijerarhijski prikaz podataka). Naime, u gornjem levom uglu su prikazani manji fajlovi, a kako idemo na desno i dole tako su prikazani sve veci fajlovi. Kao da smo povukli dijagonalu.
+
+    Inace, lodash.js zauzima dosta mesta, a koristili smo samo par f-ja. OVO MORAMO SREDITI! To je jer smo importovali citav lodash, umesto samo one f-je koje smo koristili iz lodash-a. Kada hoverujemo preko bundle mozemo videti path u kom fajl use on koristio i koliko je velik. Tako da idemo da optimizujemo ovo. Idemo u _globals.js gde smo importovali lodash i importujemo specific f-je, i onda ce VIte da bandluje samo te f-je, a ne citavu lodash lib. Apjdetovacemo import ali onda moramo i citavu skriptu jer smo koristili _.taFunkcija(), a sad cemo direkt tu f-ju sa taFunkcija()
+
+        import upperFirst from 'lodash/upperFirst'
+        import camelCase from 'lodash/camelCase'
+
+         _.upperFirst() ---> upperFirst()
+         _.camelCase() ---> camelCase()
+    
+    I sad ponovo pokrenemo npm run build, i videcemo kako se lodash bundle size znaaatno smanjio.
+
+    DAKLE IMPORTUJ SAMO ONO STO TI TREBA.
+
+    SAd cemo da uklonimo visualizer()
+
+🔗 LINKOVI
+    002 Lodash
+    https://lodash.com/
+
+    005 NProgress
+    https://ricostacruz.com/nprogress/
+
+    007 Rollup-Plugin-Visualizer
+    https://github.com/btd/rollup-plugin-visualizer
+
+
+
+
+
+
+💥💥💥💥💥💥💥💥💥💥💥 19. DEPLOYMENT + PRODUCTION 💥💥💥💥💥💥💥💥💥💥💥
+🟢 VERCEL 🟢
+    Nakon komande npm run build, gde se nasa app builduje u dist folderu. Idemo da instaliramo vercel:
+
+    npm i -g vercel
+
+    Vazno je da instaliram okao global. (-g)
+    Sad treba da konektujemo nas akaunt koji smo kreirali na vercelu:
+
+    vercel login
+
+    Sad ce da pita
+    
+    Enter your email: 
+
+    I onda ce na mejl da nam stigne mejl da potvrdimo da smo to mi. Sada idemo da kucamo komande za deploy:
+
+    vercel
+
+    Sad ce da iskoci Set up and deploy "path fajla"? [Y/n]
+    itd itd....
+
+    I sada kada smo deployovali sajt, moramo da sredimo rules koja smo kreirali za Firebase Database i Storage. Nisu potpuno sigurni, jer bilo koji logovan korisnik moze edituje fajlove, pa ukljucujuci i one fajlove koji ne pripadaju njemu (koje je recimo drugi korisnik kreirao).
+    Idemo u Firestore Database u Rules. Pise:
+
+        rules_version = '2';
+        service cloud.firestore {
+            match /databases/{database}/documents {
+                match /{document=**} {
+                    allow read: if true;
+                    allow write: if request.auth.uid != null;
+                }
+            }
+        }
+
+    Zelimo da promenimo write rule. Zelimo da napisemo pravilo kada upisujemo u bazu, kada editujemo ili brisemo. Mozemo da napisemo za svaku ovu radnju poseban rule. Ovim sto smo mi stavil igore je da svaki korisnik koji je ulogovan moze da radi sa dokumentima sta hoce. A to ne zelimo. 
+
+        rules_version = '2';
+        service cloud.firestore {
+            match /databases/{database}/documents {
+                match /{document=**} {
+                    allow read: if true;
+                    allow write: if request.auth.uid == resource.data.uid
+                }
+            }
+        }
+    
+    - resource je document kom korisnik zeli da pristupi. Pristupamo podacima u sklopu documenta koristeci .data, kroz ovaj objekat, mozemo da pristupimo bilo kojoj vrednosti u ovom dokumentu. 
+    Kondicion koji smo napisali proverava da li se ID na clientu podudara sa ID-em dokumenta. Asajnovali smo ID korisnika u UID property. Ako klijent tj korisnik pokusa da writuje dokument koji nije u njegovom vlasnistvu, request ce biti rejected.
+    - Jedan od problema ovog pravila je sto ce se odraziti i na kreiranje dokumenta. Ne mozemo da dohvatiti neki ID dokumenta ako on (dokument) ne postoji. I dalje zelimo da mozemo da kreiramo dokumente, ali ce nas ovo pravilo rejectovati. Te cemo kreirati rule specijalno za kreiranje dokumenta.
+    allow create: if request.auth != null; ---> dakle dozvolicemo bilo kom ulogovanom korisniku da kreira dokumenta.
+    allow delete: request.auth.uid == resource.data.uid;  ---> za brisanje dokumenta, isto je kao ono za writting, dakle trebada budu owneri onog dokumenta koji pokusavaju da obrisu.
+
+        rules_version = '2';
+        service cloud.firestore {
+            match /databases/{database}/documents {
+                match /{document=**} {
+                    allow read: if true;
+                    allow write: if request.auth.uid == resource.data.uid;
+                    allow create: if request.auth != null;
+                    allow delete: if request.auth.uid == resource.data.uid;
+                }
+            }
+        }
+
+
+    FALI SADRZAJA, ON BI MENJAO I STORAGE RULESSSS.
